@@ -1,0 +1,118 @@
+import math
+# Stałe fizyczne
+PI = math.pi
+EPSILON_0 = 8.854e-12  # przenikalność elektryczna próżni (F/m)
+PLANCK = 6.626e-34  # stała Plancka (J·s)
+PREDKOSC_SWIATLA = 3e8  # m/s
+LADUNEK_ELE = 1.602e-19  # C
+# Prace wyjścia [eV]
+prace_wyjscia_ev = {
+    'sód': 2.28,
+    'aluminium': 4.28,
+    'żelazo': 4.50,
+    'miedź': 4.70,
+    'cynk': 4.30,
+    'srebro': 4.26,
+    'platyna': 5.65,
+    'ołów': 4.25
+}
+
+def wczytaj_liczbe(komunikat, warunek=lambda x: True, blad="Nieprawidłowa wartość."):
+    while True:
+        try:
+            wartosc = float(input(komunikat))
+            if warunek(wartosc):
+                return wartosc
+            else:
+                print(blad)
+        except ValueError:
+            print("Podaj poprawną liczbę.")
+
+def wczytaj_tekst(komunikat, opcje):
+    while True:
+        wartosc = input(komunikat).strip().lower()
+        for opcja in opcje:
+            if wartosc == opcja.lower():
+                return opcja
+        print(f"Nieprawidłowa opcja. Wybierz spośród: {', '.join(opcje)}")
+
+def eV_na_dżule(ev):
+    return ev * LADUNEK_ELE
+
+def dżule_na_eV(joule):
+    return joule / LADUNEK_ELE
+
+def dlugosc_na_czestotliwosc(dl_fali_nm):
+    dl_m = dl_fali_nm * 1e-9
+    return PREDKOSC_SWIATLA / dl_m
+
+def oblicz_ladunek_Q(R, f, W):
+    hf = PLANCK * f
+    Q = (4 * PI * EPSILON_0 * (hf - W) * R) / LADUNEK_ELE
+    return max(Q, 0)
+
+def rysuj_wykres_tekstowy(slownik):
+    print("\nWYKRES SŁUPKOWY ŁADUNKU Q:")
+    maks = max(slownik.values()) if slownik else 0
+    for metal, q in slownik.items():
+        dlugosc = int((q / maks) * 40) if maks > 0 else 0
+        pasek = '█' * dlugosc
+        print(f"{metal.capitalize():10s}: {pasek} ({q:.2e} C)")
+
+def zadanie_1():
+    promien = wczytaj_liczbe("Podaj promień kuli [m]: ", lambda x: x > 0, "Promień musi być dodatni.")
+    dl_fali = wczytaj_liczbe("Podaj długość fali fotonu [nm]: ", lambda x: x > 0, "Długość fali musi być dodatnia.")
+    czestotliwosc = dlugosc_na_czestotliwosc(dl_fali)
+
+    ladunki = {}
+    for metal, praca_ev in prace_wyjscia_ev.items():
+        praca = eV_na_dżule(praca_ev)
+        Q = oblicz_ladunek_Q(promien, czestotliwosc, praca)
+        ladunki[metal] = Q
+
+    rysuj_wykres_tekstowy(ladunki)
+
+def zadanie_2():
+    metal = wczytaj_tekst("Wybierz metal: ", list(prace_wyjscia_ev.keys()))
+    dl_fali = wczytaj_liczbe("Podaj długość fali fotonu [nm]: ", lambda x: x > 0)
+    czestotliwosc = dlugosc_na_czestotliwosc(dl_fali)
+    energia_fotonu = PLANCK * czestotliwosc
+    praca_wyjscia = eV_na_dżule(prace_wyjscia_ev[metal])
+
+    if energia_fotonu > praca_wyjscia:
+        energia_kin = energia_fotonu - praca_wyjscia
+        print(f"Elektrony zostaną wybite. Energia kinetyczna: {dżule_na_eV(energia_kin):.3f} eV")
+    else:
+        print("Elektrony NIE zostaną wybite – energia fotonu jest za mała.")
+
+
+def zadanie_3():
+    promien = wczytaj_liczbe("Podaj promień kuli [m]: ", lambda x: x > 0)
+    potencjal = wczytaj_liczbe("Podaj potencjał elektryczny [V]: ")
+    energia = (potencjal * LADUNEK_ELE) / (4 * PI * EPSILON_0 * promien)
+    czestotliwosc = energia / PLANCK
+    dlugosc_fali_m = PREDKOSC_SWIATLA / czestotliwosc
+    dlugosc_fali_nm = dlugosc_fali_m * 1e9
+    print(f"Potrzebna długość fali: {dlugosc_fali_nm:.2f} nm")
+
+def menu():
+    while True:
+        print("\nMENU:")
+        print("1. Wykres słupkowy ładunku Q dla metali")
+        print("2. Sprawdź wybicie elektronów i energię")
+        print("3. Oblicz długość fali dla zadanego potencjału")
+        print("4. Zakończ program")
+        wybor = wczytaj_tekst("Wybierz opcję (1-4): ", ["1", "2", "3", "4"])
+
+        if wybor == "1":
+            zadanie_1()
+        elif wybor == "2":
+            zadanie_2()
+        elif wybor == "3":
+            zadanie_3()
+        elif wybor == "4":
+            print("Zamykanie programu.")
+            break
+
+if __name__ == "__main__":
+    menu()
